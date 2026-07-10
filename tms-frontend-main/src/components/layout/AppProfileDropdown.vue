@@ -1,0 +1,400 @@
+<!-- eslint-disable no-unused-vars -->
+<template>
+  <div class="relative">
+    <!-- Profile Button -->
+    <button
+      @click="toggleDropdown"
+      class="flex items-center space-x-3 p-2 text-sm rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-all duration-200"
+      :class="{ 'bg-gray-50': isOpen }"
+    >
+      <!-- User Avatar -->
+      <div class="relative">
+        <img
+          v-if="currentUser?.avatar"
+          :src="currentUser.avatar"
+          :alt="currentUser.name || currentUser.fullName"
+          class="w-8 h-8 rounded-full object-cover ring-2 ring-white shadow-sm"
+        >
+        <div
+          v-else
+          class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center shadow-sm"
+        >
+          <span class="text-white text-sm font-semibold">
+            {{ getInitials(currentUser?.name || currentUser?.fullName) }}
+          </span>
+        </div>
+
+        <!-- Online Status Indicator -->
+        <div class="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full ring-2 ring-white"></div>
+      </div>
+
+      <!-- User Info (Hidden on mobile) -->
+      <div class="hidden sm:block text-left">
+        <p class="text-gray-900 font-medium">{{ currentUser?.name || currentUser?.fullName || 'User' }}</p>
+        <p class="text-gray-500 text-xs capitalize">{{ getCurrentRoleDisplayName() }}</p>
+      </div>
+
+      <!-- Dropdown Arrow -->
+      <svg
+        class="w-4 h-4 text-gray-400 transition-transform duration-200"
+        :class="{ 'rotate-180': isOpen }"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
+
+    <!-- Dropdown Menu -->
+    <div
+      v-if="isOpen"
+      class="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
+    >
+      <!-- User Info Header -->
+      <div class="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-200">
+        <div class="flex items-center space-x-3">
+          <!-- Larger Avatar -->
+          <div class="relative">
+            <img
+              v-if="currentUser?.avatar"
+              :src="currentUser.avatar"
+              :alt="currentUser.name || currentUser.fullName"
+              class="w-12 h-12 rounded-full object-cover ring-3 ring-white shadow-lg"
+            >
+            <div
+              v-else
+              class="w-12 h-12 rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 flex items-center justify-center shadow-lg"
+            >
+              <span class="text-white text-lg font-semibold">
+                {{ getInitials(currentUser?.name || currentUser?.fullName) }}
+              </span>
+            </div>
+            <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 rounded-full ring-2 ring-white"></div>
+          </div>
+
+          <div class="flex-1 min-w-0">
+            <h3 class="text-lg font-semibold text-gray-900 truncate">{{ currentUser?.name || currentUser?.fullName || 'User' }}</h3>
+            <p class="text-sm text-gray-600">{{ currentUser?.email || 'user@example.com' }}</p>
+            <div class="flex items-center mt-1">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 capitalize">
+                {{ getCurrentRoleDisplayName() }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Menu Items -->
+      <div class="py-2">
+        <!-- Role-specific Profile Link -->
+        <!-- ✅ UPDATED: Only visible for Temple Admin (tenant) and Devotee roles -->
+        <router-link
+          v-if="showMyProfileLink"
+          :to="getProfileLink()"
+          @click="closeDropdown"
+          class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors duration-200"
+        >
+          <svg class="mr-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+          </svg>
+          My Profile
+        </router-link>
+
+        <!-- Notifications -->
+        <button
+          @click="toggleNotifications"
+          class="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors duration-200"
+        >
+          <div class="flex items-center">
+            <svg class="mr-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-5 5v-5z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2z"/>
+            </svg>
+            Notifications
+          </div>
+          <div class="flex items-center space-x-2">
+            <span
+  v-if="notificationsCount > 0"
+  class="text-xs text-gray-500"
+>
+  {{ notificationsCount }} new
+</span>
+
+            <div class="relative">
+              <input
+                type="checkbox"
+                :checked="notificationsEnabled"
+                @change="toggleNotifications"
+                class="sr-only"
+              >
+              <div class="w-9 h-5 bg-gray-200 rounded-full shadow-inner transition-colors duration-200"
+                   :class="notificationsEnabled ? 'bg-indigo-600' : 'bg-gray-200'">
+                <div class="w-4 h-4 bg-white rounded-full shadow transform transition-transform duration-200"
+                     :class="notificationsEnabled ? 'translate-x-4' : 'translate-x-0.5'"
+                     style="margin-top: 2px;">
+                </div>
+              </div>
+            </div>
+          </div>
+        </button>
+
+        <div class="border-t border-gray-200 my-2"></div>
+
+        <!-- Help & Support -->
+        <router-link
+          to="/support"
+          @click="closeDropdown"
+          class="flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-indigo-600 transition-colors duration-200"
+        >
+          <svg class="mr-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Help & Support
+        </router-link>
+
+        <div class="border-t border-gray-200 my-2"></div>
+
+        <!-- Logout -->
+        <button
+          @click="handleLogout"
+          class="w-full flex items-center px-4 py-3 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors duration-200"
+        >
+          <svg class="mr-3 h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          Sign Out
+        </button>
+      </div>
+    </div>
+
+    <!-- Overlay -->
+    <div
+      v-if="isOpen"
+      @click="closeDropdown"
+      class="fixed inset-0 z-40"
+    ></div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { useNotificationStore } from '@/stores/notification'
+
+// Props (keeping for backward compatibility, but auth store takes precedence)
+const props = defineProps({
+  user: {
+    type: Object,
+    default: () => ({})
+  },
+  role: {
+    type: String,
+    default: 'user'
+  }
+})
+
+// Emits
+const emit = defineEmits(['logout'])
+
+// Composables
+const route = useRoute()
+const authStore = useAuthStore()
+const notificationStore = useNotificationStore()
+
+
+const notificationsCount = computed(() => notificationStore.unreadCount)
+
+
+// Use auth store data with props as fallback
+const currentUser = computed(() => authStore.user || props.user)
+const currentRole = computed(() => authStore.userRole || props.role)
+
+// ✅ NEW: Only show "My Profile" link for Temple Admin (tenant) and Devotee roles.
+// Add numeric role IDs here too if your backend sends IDs instead of names
+// (e.g. '2' for Temple Admin, '3' for Devotee).
+const showMyProfileLink = computed(() => {
+  const role = currentRole.value
+  return ['templeadmin', 'tenant', 'devotee'].includes(role)
+})
+
+// Reactive data
+const isOpen = ref(false)
+const notificationsEnabled = ref(true)
+// eslint-disable-next-line no-unused-vars
+const showKeyboardShortcuts = ref(false)
+
+// Methods
+const toggleDropdown = () => {
+  isOpen.value = !isOpen.value
+}
+
+const closeDropdown = () => {
+  isOpen.value = false
+}
+
+const getInitials = (name) => {
+  if (!name) return 'U'
+  return name
+    .split(' ')
+    .map(word => word.charAt(0))
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+// ✅ UPDATED: Role display function to handle ALL role types including new ones
+const getCurrentRoleDisplayName = () => {
+  const role = currentRole.value
+
+  console.log('🎭 Profile dropdown - current role:', role) // Debug log
+
+  const roleNames = {
+    // ✅ NEW: Added standard_user and monitoring_user roles
+    'standard_user': 'Standard User',
+    'standarduser': 'Standard User',
+    'monitoring_user': 'Monitoring User',
+    'monitoringuser': 'Monitoring User',
+
+    // Existing backend role names
+    'superadmin': 'Super Admin',
+    'super_admin': 'Super Admin',
+    'templeadmin': 'Tenant',
+    'tenant': 'Temple Admin',
+    'devotee': 'Devotee',
+    'volunteer': 'Volunteer',
+
+    // Legacy role names (for backward compatibility)
+    'entity_admin': 'Temple Manager',
+
+    // ✅ UPDATED: Complete numeric role IDs mapping
+    '1': 'Super Admin',
+    '2': 'Temple Admin',
+    '3': 'Devotee',
+    '4': 'Volunteer',
+    '5': 'Standard User',      // ✅ NEW: Added roleId 5
+    '6': 'Monitoring User'     // ✅ NEW: Added roleId 6
+  }
+
+  const displayName = roleNames[role] || 'User'
+  console.log('🎭 Profile dropdown - display name:', displayName) // Debug log
+
+  return displayName
+}
+
+// ✅ UPDATED: Profile link function to handle new roles and devotee endpoint
+const getProfileLink = () => {
+  const entityId = route.params.entityId || route.params.id
+  const role = currentRole.value
+
+  console.log('🔗 Profile link - role:', role, 'entityId:', entityId) // Debug log
+
+  switch (role) {
+    case 'superadmin':
+    case 'super_admin':
+      return '/superadmin/profile'
+
+    case 'tenant':
+    case 'templeadmin':
+      return '/tenant/profile'
+
+    case 'entity_admin':
+      return entityId ? `/entity/${entityId}/profile` : '/profile'
+
+    case 'devotee':
+      // ✅ FIXED: Route to devotee profile correctly
+      { const devoteeEntityId = route.params.id ||
+                              route.params.entityId ||
+                              localStorage.getItem('current_entity_id') ||
+                              localStorage.getItem('selected_entity_id')
+
+      console.log('👤 Devotee profile - entityId:', devoteeEntityId) // Debug log
+
+      if (devoteeEntityId) {
+        return `/entity/${devoteeEntityId}/devotee/profile`
+      }
+      return '/devotee/profile' }
+
+    case 'volunteer':
+      return entityId ? `/entity/${entityId}/volunteer/profile` : '/profile'
+
+    // ✅ Handle standard_user and monitoring_user
+    case 'standard_user':
+    case 'standarduser':
+    case 'monitoring_user':
+    case 'monitoringuser':
+      { const currentTenantId = localStorage.getItem('current_tenant_id') ||
+                              localStorage.getItem('selected_tenant_id')
+      return currentTenantId ? `/entity/${currentTenantId}/profile` : '/profile' }
+
+    default:
+      return '/profile'
+  }
+}
+
+// ✅ UPDATED: Settings link function to handle new roles
+// eslint-disable-next-line no-unused-vars
+const getSettingsLink = () => {
+  const entityId = route.params.entityId || route.params.id
+  const role = currentRole.value
+
+  console.log('⚙️ Settings link - role:', role, 'entityId:', entityId) // Debug log
+
+  switch (role) {
+    case 'superadmin':
+    case 'super_admin':
+      return '/superadmin/settings'
+    case 'tenant':
+    case 'templeadmin':
+      return '/tenant/settings'
+    case 'entity_admin':
+      return entityId ? `/entity/${entityId}/settings` : '/settings'
+    case 'devotee':
+      return entityId ? `/entity/${entityId}/devotee/settings` : '/settings'
+    case 'volunteer':
+      return entityId ? `/entity/${entityId}/volunteer/settings` : '/settings'
+    // ✅ NEW: Handle standard_user and monitoring_user
+    case 'standard_user':
+    case 'standarduser':
+    case 'monitoring_user':
+    case 'monitoringuser':
+      // These users access entity dashboards, so settings should be entity-based
+      { const currentTenantId = localStorage.getItem('current_tenant_id') ||
+                              localStorage.getItem('selected_tenant_id')
+      return currentTenantId ? `/entity/${currentTenantId}/settings` : '/settings' }
+    default:
+      return '/settings'
+  }
+}
+
+const toggleNotifications = () => {
+  notificationsEnabled.value = !notificationsEnabled.value
+}
+
+const handleLogout = () => {
+  closeDropdown()
+
+  // Use auth store logout if available, otherwise emit
+  if (authStore.logout) {
+    authStore.logout()
+  } else {
+    emit('logout')
+  }
+}
+
+// Click outside handler
+const handleClickOutside = (event) => {
+  if (isOpen.value && !event.target.closest('.relative')) {
+    closeDropdown()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
+})
+</script>

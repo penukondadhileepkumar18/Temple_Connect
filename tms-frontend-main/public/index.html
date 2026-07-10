@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    
+    <!-- App Title & Description -->
+    <title>Temple Management System</title>
+    <meta name="description" content="Complete temple management solution with online darshan booking and management tools">
+    <meta name="theme-color" content="#42b883">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Apple PWA Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TMS">
+    <link rel="apple-touch-icon" href="/img/icons/apple-touch-icon.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="32x32" href="/img/icons/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/img/icons/favicon-16x16.png">
+    
+    <!-- PWA Icons -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="/pwa-512x512.png">
+    
+    <!-- Microsoft Tile -->
+    <meta name="msapplication-TileColor" content="#42b883">
+    <meta name="msapplication-TileImage" content="/img/icons/mstile-150x150.png">
+    
+    <!-- Safari Pinned Tab -->
+    <link rel="mask-icon" href="/img/icons/safari-pinned-tab.svg" color="#42b883">
+    
+    <!-- Splash Screen for iOS -->
+    <link rel="apple-touch-startup-image" href="/pwa-192x192.png">
+    
+    <!-- Router Redirect Script -->
+    <script>
+        // Extract the path and query from the URL
+        const path = window.location.pathname;
+        const search = window.location.search;
+        const hash = window.location.hash;
+        
+        // If there's a hash, use it; otherwise, preserve the path and search
+        if (hash) {
+            // Hash already exists, don't need to do anything
+        } else if (path !== "/" && path !== "/index.html") {
+            // Convert the path to a hash route
+            window.location.replace("/#" + path + search);
+        } else if (search) {
+            // Just have a query string
+            window.location.replace("/#" + search);
+        } else {
+            // Just redirect to the root
+            window.location.replace("/#/");
+        }
+    </script>
+</head>
+<body>
+    <div id="app">
+        <h1 style="text-align: center; margin-top: 100px; color: #555;">Redirecting to Temple Management System...</h1>
+        <div style="text-align: center; margin-top: 30px;">
+            <div style="display: inline-block; width: 50px; height: 50px; border: 5px solid #f3f3f3; border-top: 5px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        </div>
+    </div>
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    
+    <!-- PWA Service Worker Registration -->
+    <script src="/pwa-register.js"></script>
+</body>
+</html>
